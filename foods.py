@@ -84,9 +84,9 @@ def plot_map(gdf, df, dataset_choice, selected_county, selected_districts):
     st_folium(m, width=1000, height=900)
 
 def main():
-    st.title("台灣縣市地圖與美食標記")
+    st.title("行政區域美食地圖標記")
 
-    dataset_choice = st.sidebar.selectbox("選擇資料來源", ["500碗", "2024必比登"])
+    dataset_choice = st.sidebar.selectbox("選擇美食名單", ["500碗", "2024必比登"])
 
     if dataset_choice == "500碗":
         df = load_csv_data('new500data.csv', encoding='utf-8')
