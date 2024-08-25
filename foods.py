@@ -27,9 +27,6 @@ def load_csv_data(csv_file_path, encoding='big5'):
         df.rename(columns={'碗　　數': '星　　評'}, inplace=True)
     return df
 
-def star_rating_html(rating):
-    return '⭐' * 1  # 圖示
-
 def plot_map(gdf, df, dataset_choice, selected_county, selected_districts):
     if dataset_choice == "500碗":
         rating_column = '碗　　數'
@@ -44,15 +41,19 @@ def plot_map(gdf, df, dataset_choice, selected_county, selected_districts):
     df = df.dropna(subset=["經度", "緯度"])
     geometry = [Point(xy) for xy in zip(df["經度"], df["緯度"])]
     df_geo = gpd.GeoDataFrame(df, geometry=geometry, crs="EPSG:4326")
+
+    # 
+    filtered_df_geo = df_geo[(df_geo["縣市"] == selected_county) & (df_geo["鄉鎮區"].isin(selected_districts))]
+
     filtered_gdf = gdf[gdf["COUNTYNAME"] == selected_county]
 
-    
-    if 'index_right' in df_geo.columns:
-        df_geo = df_geo.drop(columns='index_right')
+    if 'index_right' in filtered_df_geo.columns:
+        filtered_df_geo = filtered_df_geo.drop(columns='index_right')
     if 'index_right' in filtered_gdf.columns:
         filtered_gdf = filtered_gdf.drop(columns='index_right')
 
-    points_within_county = gpd.sjoin(df_geo, filtered_gdf, how="inner", predicate="within")
+    # 
+    points_within_county = gpd.sjoin(filtered_df_geo, filtered_gdf, how="inner", predicate="within")
 
     center_lat = filtered_gdf.geometry.centroid.y.mean()
     center_lon = filtered_gdf.geometry.centroid.x.mean()
@@ -62,7 +63,7 @@ def plot_map(gdf, df, dataset_choice, selected_county, selected_districts):
     for _, row in points_within_county.iterrows():
         rating_display = row[rating_column]
         if dataset_choice == "2024必比登":
-            rating_display = f"⭐ {row[rating_column]}"  
+            rating_display = f"⭐ {row[rating_column]}"
 
         tooltip_text = f"{row['名稱']}\n{row['地　　址']}\n{row['得獎菜色']}\n{rating_column}: {rating_display}"
         popup_text = (
@@ -83,7 +84,7 @@ def plot_map(gdf, df, dataset_choice, selected_county, selected_districts):
     st_folium(m, width=1000, height=900)
 
 def main():
-    st.title("台灣縣市地圖與標記")
+    st.title("台灣縣市地圖與美食標記")
 
     dataset_choice = st.sidebar.selectbox("選擇資料來源", ["500碗", "2024必比登"])
 
@@ -94,11 +95,11 @@ def main():
 
     gdf = load_geojson_data()
 
-    # 獲取所有縣市名稱
+    
     counties = df['縣市'].unique()
     selected_county = st.sidebar.selectbox("選擇一個縣市", counties)
 
-    # 根據選擇的縣市獲取所有行政區域
+    
     districts = df[df['縣市'] == selected_county]['鄉鎮區'].unique()
     selected_districts = st.sidebar.multiselect("選擇行政區域", districts, default=districts)
 
@@ -106,3 +107,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
